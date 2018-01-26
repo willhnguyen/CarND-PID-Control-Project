@@ -3,6 +3,7 @@
 #include "json.hpp"
 #include "PID.h"
 #include <math.h>
+#include <stdlib.h>
 
 // for convenience
 using json = nlohmann::json;
@@ -28,14 +29,33 @@ std::string hasData(std::string s) {
   return "";
 }
 
-int main()
+int main(int argc, char **argv)
 {
   uWS::Hub h;
 
-  PID pid;
-  // TODO: Initialize the pid variable.
+  PID steering_pid;
+  // steering_pid.Init(0, 0, 0); // Already done internally
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // The below values were determined manually
+  double p = 0.1;
+  double i = 0.0005;
+  double d = 1.0;
+
+  // To check other PID values and their effects on the driving, pass in all 3 of the PID values as follows
+  // $ ./pid Kp Ki Kd
+  // Initialize pid coefficients using passed in parameters
+  std::cout << "Num args: " << argc << std::endl;
+  if (argc == 4) {
+    std::cout << "Using values (" << argv[1] << "," << argv[2] << "," << argv[3] << ")" << std::endl;
+    p = std::atof(argv[1]);
+    i = std::atof(argv[2]);
+    d = std::atof(argv[3]);
+  }
+
+  // Initialize PID controller to the provided values
+  steering_pid.Init(p, i, d);
+
+  h.onMessage([&steering_pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -57,7 +77,14 @@ int main()
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
-          
+
+          //****************************************************************************************
+          // Calculate Steering Angle
+          //****************************************************************************************
+          steering_pid.UpdateError(cte);
+          steer_value = steering_pid.TotalError();
+          steer_value = std::min(1.0, std::max(-1.0, steer_value)); // Set it within the bounds of 1 and -1
+
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
