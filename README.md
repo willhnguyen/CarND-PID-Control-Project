@@ -33,11 +33,19 @@ $ ./pid
 ```
 
 ## Project Information
+![PID equation](https://latex.codecogs.com/gif.latex?PID%20%3D%20-K_P%20CTE_t%20-%20K_D%20%28CTE_t%20-%20CTE_%7Bt-1%7D%29%20-%20K_I%20%5Csum_%7Bt%20%5Cin%20%5Cleft%20%5C%7B%201%2C%202%2C%20...%2C%20t%20%5Cright%20%5C%7D%20%7D%20CTE_t)
+
 The PID controller allows a car to drive itself by identifying ways to correct the car's steering. It comes in 3 parts.
+
+![P equation](https://latex.codecogs.com/gif.latex?P%20%3D%20K_P%20*%20CTE)
 
 The P part of the PID controller is short for proportional. This part identifies the cross-track error (abbr. CTE, def. the perpendicular distance away from the target trajectory). This term will tell the car to adjust its steering toward the opposite direction to get closer to the trajectory. Although this update works, it poses a problem once the car gets close enough that it overshoots the trajectory. Once this happens, the car will continously undesirably oscillate around the trajectory.
 
+![D equation](https://latex.codecogs.com/gif.latex?D%20%3D%20K_D%20%28CTE_t%20-%20CTE_%7Bt-1%7D%29)
+
 The D part of the PID controller is short for differential. This part identifies the change in the CTE and helps the car adjust its steering to avoid the oscillation problem.
+
+![I equation](https://latex.codecogs.com/gif.latex?I%20%3D%20K_I%20%5Csum_%7Bt%20%5Cin%20%5Cleft%20%5C%7B%201%2C%202%2C%20...%2C%20t%20%5Cright%20%5C%7D%20%7D%20CTE_t)
 
 The I part of the PID controller is short for integral. This part looks at the entire history of the car's CTE to adjust for systematic bias. One potential systematic bias is if the car's steering isn't properly aligned, causing it to drift towards a location away from the target trajectory.
 
