@@ -2,10 +2,6 @@
 
 using namespace std;
 
-/*
-* TODO: Complete the PID class.
-*/
-
 PID::PID() {
     // Fill the error and coefficient terms with default value zero
     Init(0, 0, 0);
