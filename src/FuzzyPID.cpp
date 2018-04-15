@@ -1,4 +1,6 @@
 #include "FuzzyPID.h"
+#include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -7,61 +9,82 @@ using namespace std;
 FuzzyPID::FuzzyPID() {
     // Fill the error and coefficient terms with default value zero
     Init(0, 0, 0);
+    _iterations = 0;
 
-    // Initialize Fuzzy PID's state variables
-    V_prev = 0;
-    delta_V_prev = 0;
-    dVdKp_prev = 0;
-    time_prev = 0;
+    // Set Fuzzy PID's delta_Kp magnitude values
+    large_mag = 0.001;
+    medium_mag = 0.0005;
+    small_mag = 0.0001;
+
 }
 
 void FuzzyPID::UpdateError(double error, double speed, double t) {
-    // Error can be...
-    // * CTE for steering angle
-    // * (actual - desired) for other measurements
 
+    /***************************************************************************
+    * Revised Version
+    ***************************************************************************/
+    double delta_t = t - t_tm1;
+    t_tm1 = t;
+
+    // Calculate V
     double error_previous = p_error;
-    double delta_t = t - time_prev;
+    double delta_error = error - error_previous;
+    double e_dot = delta_error / delta_t;
+    double V = 0.5 * pow(error, 2) + pow(e_dot, 2);
 
-    // Update Kp's value based on previous error calculations
-    double delta_Kp = 1E-10;
-    if (delta_V_prev > EPSILON) {
-      delta_Kp = 1E-1;
+    // Calculate delta_V and V_dot
+    double delta_V = V - V_tm1;
+    // double V_dot = delta_V / delta_t; // Unused
 
-    } else if (delta_V_prev < -EPSILON) {
-      delta_Kp = 1E-5;
-    }
+    // Calculate delta_Kp
+    double delta_Kp = Kp - Kp_tm1;
+    // double Kp_dot = delta_Kp / delta_t; // Unused
 
-    // Determine the sign of delta_Kp and add to Kp
-    // Signs inverse of the signs suggested in the paper work best
-    if (dVdKp_prev >= 0) {
-      Kp += delta_Kp;
+    // Determine Sign for Kp
+    // Although the sign is determined by opposite the sign of
+    // (delta_V / delta_Kp), we can use logic to determine this since only the
+    // sign is desired, not the actual value.
+    bool delta_V_is_neg = delta_V < 0;
+    bool delta_Kp_is_neg = delta_Kp < 0;
+    bool sign_new_delta_Kp_is_neg = (delta_V_is_neg == delta_Kp_is_neg);
+
+    // Update the stored state values for the next iteration
+    Kp_tm2 = Kp_tm1;
+    Kp_tm1 = Kp;
+    V_tm1 = V;
+
+    // Update Kp after one iteration
+    if (_iterations > 2) {
+
+      // Determine the new delta_Kp magnitude
+      double delta_Kp_for_updating_Kp = small_mag; // If it's zero
+      if (delta_V > EPSILON) {
+        // If delta_V is positive, then use large magnitude
+        delta_Kp_for_updating_Kp = large_mag;
+      } else if (delta_V < -EPSILON) {
+        // If delta_V is negative, then use medium magnitude
+        delta_Kp_for_updating_Kp = medium_mag;
+      }
+
+      // Determine the new delta_Kp sign
+      if (sign_new_delta_Kp_is_neg) {
+        delta_Kp_for_updating_Kp *= -1;
+      } else {
+        // delta_Kp_for_updating_Kp *= -1;
+      }
+
+      // Update Kp value
+      Kp += delta_Kp_for_updating_Kp;
     } else {
-      Kp -= delta_Kp;
+      _iterations += 1;
     }
 
-    // EQUATION: p_error(t) = error(t);
+    // PID Controller
+    // P EQUATION: p_error(t) = error(t);
+    // I EQUATION: i_error(t) = error(t) + error(t-1) + ... + error(0)
+    // D EQUATION: d_error(t) = (error(t) - error(t-1)) / delta_t
     p_error = error;
-
-    // EQUATION: i_error(t) = error(t) + error(t-1) + ... + error(0)
     i_error += error;
-
-    // EQUATION: d_error(t) = (error(t) - error(t-1)) / delta_t
-    // Assumption: delta_t is consistently 1
-    d_error = (error - error_previous) / delta_t;
-
-
-    // // Fuzzy Kp Update Logic
-    // V Calculation
-    // EQUATION: V(e,e_dot) = 1.0 / 2.0 * (e**2 + e_dot**2)
-    double V = 0.5 * (error * error + d_error * d_error);
-    // float V = 0.5 * (error * error + speed * speed);
-    double delta_V = V - V_prev;
-    double dVdKp = delta_V / delta_Kp;
-
-    // Store new state
-    V_prev = V;
-    delta_V_prev = delta_V;
-    dVdKp_prev = dVdKp;
-    time_prev = t;
+    // d_error = (error - error_previous) / delta_t;
+    d_error = error - error_previous;
 }

@@ -51,12 +51,9 @@ int main(int argc, char **argv)
   FuzzyPID steering_fuzzy_pid;
 
   // The below values were determined manually
-  // double p = 0.1;
-  // double i = 0.0005;
-  // double d = 1.0;
-  double p = 0.3;
-  double i = 0;
-  double d = 0;
+  double p = 0.1;
+  double i = 0.0005;
+  double d = 1.0;
 
   // To check other PID values and their effects on the driving, pass in all 3 of the PID values as follows
   // $ ./pid Kp Ki Kd
@@ -88,9 +85,15 @@ int main(int argc, char **argv)
           double cte = std::stod(j[1]["cte"].get<std::string>());
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
+          double pos_x = std::stod(j[1]["x"].get<std::string>());
+          double pos_y = std::stod(j[1]["y"].get<std::string>());
+          double curr_wp_x = std::stod(j[1]["curr_wp_x"].get<std::string>());
+          double curr_wp_y = std::stod(j[1]["curr_wp_y"].get<std::string>());
+          double prev_wp_x = std::stod(j[1]["prev_wp_x"].get<std::string>());
+          double prev_wp_y = std::stod(j[1]["prev_wp_y"].get<std::string>());
           double steer_value;
           /*
-          * TODO: Calcuate steering value here, remember the steering value is
+          * Calcuate steering value here, remember the steering value is
           * [-1, 1].
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
@@ -116,8 +119,22 @@ int main(int argc, char **argv)
           // std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           // Output to file
+          // Time, X, Y, CurrWP_X, CurrWP_Y, PrevWP_X, PrevWP_Y, CTE, Speed, Angle, Steer_Value, FuzzyPID_V_prev
           // pid_output << time_passed.count() << "," << cte << "," << speed << "," << angle << "," << steer_value << std::endl;
-          pid_output << time_passed.count() << "," << cte << "," << speed << "," << angle << "," << steer_value << "," << steering_fuzzy_pid.V_prev << std::endl;
+          pid_output << time_passed.count()
+                     << "," << pos_x
+                     << "," << pos_y
+                     << "," << curr_wp_x
+                     << "," << curr_wp_y
+                     << "," << prev_wp_x
+                     << "," << prev_wp_y
+                     << "," << cte
+                     << "," << speed
+                     << "," << angle
+                     << "," << steer_value
+                     << "," << steering_fuzzy_pid.V_tm1
+                     << "," << steering_fuzzy_pid.Kp
+                     << std::endl;
 
           // Send data back to server
           json msgJson;
