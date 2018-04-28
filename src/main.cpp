@@ -134,6 +134,7 @@ int main(int argc, char **argv)
                      << "," << steer_value
                      << "," << steering_fuzzy_pid.V_tm1
                      << "," << steering_fuzzy_pid.Kp
+                     << "," << steering_fuzzy_pid.Ki
                      << std::endl;
 
           // Send data back to server
